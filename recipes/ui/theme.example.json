@@ -1,0 +1,23 @@
+{
+  "colors": {
+    "background": {"r": 0.02, "g": 0.02, "b": 0.03, "a": 1},
+    "surface": {"r": 0.05, "g": 0.05, "b": 0.08, "a": 0.9},
+    "text": {"r": 0.95, "g": 0.95, "b": 0.95, "a": 1},
+    "text_muted": {"r": 0.6, "g": 0.6, "b": 0.65, "a": 1},
+    "accent": {"r": 1, "g": 0.5, "b": 0.1, "a": 1},
+    "accent_hover": {"r": 1, "g": 0.62, "b": 0.3, "a": 1},
+    "danger": {"r": 0.85, "g": 0.2, "b": 0.2, "a": 1}
+  },
+  "font": {
+    "asset": "/Engine/EngineFonts/Roboto.Roboto",
+    "typefaces": {"title": "Bold", "body": "Regular"}
+  },
+  "sizes": {"title": 48, "body": 24, "small": 16},
+  "spacing": {"outer": 32, "inner": 16, "gap": 12},
+  "radius": 12,
+  "button": {
+    "normal": "surface",
+    "hovered": "accent",
+    "pressed": "accent_hover"
+  }
+}
