@@ -246,7 +246,7 @@ Input: widget Blueprint, trigger (BeginPlay or a key), input mode, pause flag.
      (bind pc (Game|GetPlayerController 0))
      (bind w (UserInterface|CreateWidget :Class "/Game/UI/WBP_Pause.WBP_Pause_C" :OwningPlayer pc))
      (UserInterface|Viewport|AddtoViewport :self w :ZOrder 0)
-     (Input|SetInputModeUIOnly :PlayerController pc :InWidgetToFocus w)
+     (Input|SetInputModeGameAndUI :PlayerController pc :InWidgetToFocus w)
      (Class|PlayerController|SetShowMouseCursor :self pc :bShowMouseCursor true))
    ```
 
