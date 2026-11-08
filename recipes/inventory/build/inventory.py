@@ -6,7 +6,8 @@
 import os, sys, time
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../../tools"))
 import mcp
-from uikit import must, ref, save, place, unplace, ensure_level, delete_assets, PIE
+from uikit import must, ref, save, place, unplace, fresh_wipe, PIE
+from bpkit import var, ensure_bp
 
 F = "/Game/Inventory"
 D = f"{F}/BP_ItemDefinition.BP_ItemDefinition"
@@ -21,20 +22,13 @@ FRESH = "--fresh" in sys.argv
 
 
 def wipe():
-    ensure_level(LEVEL)
-    unplace(LEVEL, T)
-    unplace(LEVEL, P)
-    save([LEVEL])
-    delete_assets([T, P, I] + [f"{F}/Items/{n}.{n}" for n in ITEMS] + [D])
+    # Item data (definition class and data assets) is kept; see uikit.fresh_wipe and bpkit.ensure_bp.
+    fresh_wipe(LEVEL, [T, P], [T, P, I])
 
 
 def create(path, parent):
     folder, name = path.rsplit("/", 1)[0], path.rsplit(".", 1)[1]
     must("BP", "create", {"folder_path": folder, "asset_name": name, "asset_type": ref(parent)})
-
-
-def var(bp, n, t, container=None):
-    must("BP", "add_variable", {"blueprint": ref(bp), "name": n, "type_name": t, "graph": None, "container_type": container})
 
 
 def fn(bp, name, params, outputs, code):
@@ -52,9 +46,7 @@ def fn(bp, name, params, outputs, code):
 
 
 def build_items():
-    for n in ITEMS:
-        p = f"{F}/Items/{n}.{n}"
-    create(D, "/Script/Engine.PrimaryDataAsset")
+    ensure_bp(D, "/Script/Engine.PrimaryDataAsset")
     var(D, "DisplayName", "string")
     var(D, "MaxStack", "int")
     must("BP", "compile_blueprint", {"blueprint": ref(D)})
@@ -192,14 +184,18 @@ def verify():
             assert "INV_READY" in p.markers("INV_READY"), "test actor did not start"
 
             def state(k, first=False):
-                p.key(k, focus_game=first)
+                if k:
+                    p.key(k, focus_game=first)
                 n = p.markers("INV potion=").count("INV potion=")
                 p.key("R", focus_game=False)
                 got = p.markers("INV potion=")
                 assert got.count("INV potion=") > n, f"after {k}: no state print"
                 return "potion=" + got.rsplit("INV potion=", 1)[1].split('"')[0]
 
-            s = state("T", True)
+            # T gives the pawn an inventory and moves it onto the pickup; the first key after StartPIE
+            # can be dropped, so retry until the pickup reports.
+            p.press_expect("T", "INV_PICKED")
+            s = state(None)
             assert "INV_PICKED" in p.markers("INV_PICKED"), f"pickup overlap did not fire ({s})"
             assert s == "potion=0 coin=3", f"after pickup: {s}"
             print("  pickup:", s)

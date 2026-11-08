@@ -9,7 +9,7 @@ world pickup. Built through Epic's Unreal MCP and verified in Play-in-Editor.
 python3 recipes/inventory/build/inventory.py --fresh
 ```
 
-It deletes any earlier build, rebuilds every asset, places a test actor and a
+`--fresh` deletes the logic Blueprints (test actor, pickup, component), restarts the editor and rebuilds; the item definition and item data assets are kept and their values rewritten. It then places a test actor and a
 coin pickup in `/Game/MCPTest/L_OcclusionTest`, drives them with keys in PIE
 and ends with `INVENTORY PASS`. Both actors are removed from the level after the run.
 `--verify-only` skips the build.

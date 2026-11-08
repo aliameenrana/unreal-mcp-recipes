@@ -11,7 +11,7 @@ python3 recipes/health/build/health.py --fresh   # once; magic uses BP_HealthCom
 python3 recipes/magic/build/magic.py --fresh
 ```
 
-The script deletes any earlier build and rebuilds every asset. It then places a caster and a
+`--fresh` deletes the logic Blueprints, restarts the editor and rebuilds; the spell definition and spell data assets are kept and their values rewritten. It then places a caster and a
 target dummy 600 units apart in `/Game/MCPTest/L_OcclusionTest` and drives them with keys in PIE.
 The last line is `MAGIC PASS`. Both actors are removed from the level after the run.
 `--verify-only` skips the build.

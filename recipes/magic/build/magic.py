@@ -9,7 +9,8 @@ Needs the health recipe built first (/Game/Gameplay/BP_HealthComponent).
 import json, os, sys, time
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../../tools"))
 import mcp
-from uikit import must, ref, save, place, unplace, ensure_level, delete_assets, PIE, Fail
+from uikit import must, ref, save, place, unplace, fresh_wipe, PIE, Fail
+from bpkit import var, ensure_bp, data_assets, compile_bp
 
 F = "/Game/Magic"
 D = f"{F}/BP_SpellDefinition.BP_SpellDefinition"
@@ -28,10 +29,6 @@ FRESH = "--fresh" in sys.argv
 def create(path, parent):
     folder, name = path.rsplit("/", 1)[0], path.rsplit(".", 1)[1]
     must("BP", "create", {"folder_path": folder, "asset_name": name, "asset_type": ref(parent)})
-
-
-def var(bp, n, t, container=None):
-    must("BP", "add_variable", {"blueprint": ref(bp), "name": n, "type_name": t, "graph": None, "container_type": container})
 
 
 def defaults(bp, values):
@@ -69,25 +66,17 @@ def component(owner, cls, name, props=None):
 
 
 def wipe():
-    ensure_level(LEVEL)
-    for p in (T, TG):
-        unplace(LEVEL, p)
-    save([LEVEL])
-    delete_assets([T, TG, PR, C] + [f"{F}/Spells/{n}.{n}" for n in SPELLS] + [D])
+    # Spell data (definition class and data assets) is kept; see uikit.fresh_wipe and bpkit.ensure_bp.
+    fresh_wipe(LEVEL, [T, TG], [T, TG, PR, C])
 
 
 def build_spells():
-    create(D, "/Script/Engine.PrimaryDataAsset")
+    ensure_bp(D, "/Script/Engine.PrimaryDataAsset")
     var(D, "DisplayName", "string")
     for n in ("ManaCost", "Cooldown", "Damage"):
         var(D, n, "real")
-    must("BP", "compile_blueprint", {"blueprint": ref(D)})
-    for n, vals in SPELLS.items():
-        must("DataAsset", "create", {"folder_path": F + "/Spells", "asset_name": n, "asset_type": ref(D + "_C")})
-        inst = ref(f"{F}/Spells/{n}.{n}")
-        must("Object", "set_properties", {"instance": inst, "values": json.dumps(vals)})
-        got = json.loads(must("Object", "get_properties", {"instance": inst, "properties": list(vals)}))
-        assert got == vals, f"{n}: {got}"
+    compile_bp(D)
+    data_assets(F + "/Spells", D + "_C", SPELLS)
 
 
 def build_projectile():
@@ -225,6 +214,7 @@ def verify():
         with PIE() as p:
             time.sleep(2)
             assert "MAG_READY" in p.markers("MAG_READY"), "test actor did not start"
+            p.press_expect("R", "MAG mana=")  # the first key after StartPIE can be dropped
 
             def last(tag):
                 got = p.markers(tag)
