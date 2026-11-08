@@ -21,6 +21,7 @@ formats tested against a running editor.
 | [recipes/inventory/RECIPE.md](recipes/inventory/RECIPE.md) | Data-asset items, stack-limited inventory component, world pickup. |
 | [recipes/magic/RECIPE.md](recipes/magic/RECIPE.md) | Data-asset spells, mana with regen, per-spell cooldowns, damaging projectile. |
 | [recipes/weapons/RECIPE.md](recipes/weapons/RECIPE.md) | Data-asset hitscan weapons, magazine, fire interval, timed reload, trace damage. |
+| [recipes/vehicles/RECIPE.md](recipes/vehicles/RECIPE.md) | Chaos wheeled sports car with wheel classes, torque curve, chase camera, WASD driving. |
 | [docs/HANDOFF.md](docs/HANDOFF.md) | Project brief: goals, format of sequences and recipes, the recipe catalog, known engine behavior and working rules. |
 | [tools/](tools/) | `mcp.py` JSON-RPC client for the editor's MCP server; `uikit.py` UMG builder and PIE test driver. |
 | [.mcp.json](.mcp.json) | Points an MCP client (Claude Code and others) at the editor's server on `localhost:8000/mcp`. |
@@ -59,7 +60,8 @@ formats tested against a running editor.
 | Inventory | Done. Item data assets, inventory component with stack limits, overlap pickup, verified in PIE. |
 | Magic | Done. Spell data assets, caster component with mana, regen and cooldowns, projectile damage, verified in PIE. |
 | Weapons | Done. Hitscan weapon component with magazine, fire interval and reload, verified in PIE. |
-| Enemy AI, vehicles, level generation | Planned; see the catalog in `docs/HANDOFF.md`. |
+| Vehicles | Done. Chaos sports car built from template content: accelerates, steers, brakes and holds, verified in PIE. |
+| Enemy AI, level generation | Planned; see the catalog in `docs/HANDOFF.md`. |
 
 Tested on UE 5.8, macOS. Epic's MCP plugin is experimental, so tool names and
 formats may change between engine versions.

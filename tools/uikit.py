@@ -199,6 +199,19 @@ class PIE:
         must("Slate", "PressKey", {"key": k})
         time.sleep(1)
 
+    def press_expect(self, k, tag, tries=3):
+        """Press k until a new log line containing tag appears. The first press after StartPIE is
+        sometimes dropped while the viewport takes focus; each retry clicks the viewport again."""
+        n = self.markers(tag).count(tag)
+        for i in range(tries):
+            self.key(k, focus_game=True)
+            for _ in range(6):
+                got = self.markers(tag)
+                if got.count(tag) > n:
+                    return got
+                time.sleep(0.5)
+        raise Fail(f"pressing {k} never produced '{tag}'")
+
     def snapshot(self):
         must("Slate", "Observe", {"ref": "", "maxDepth": 60})
         try:
