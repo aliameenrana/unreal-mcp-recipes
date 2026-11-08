@@ -358,11 +358,24 @@ def _on_disk(path):
     return os.path.exists(os.path.join(CONTENT, rel + ".uasset"))
 
 
+def restart_editor():
+    import subprocess
+    script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "restart_editor.sh")
+    if subprocess.run([script]).returncode != 0:
+        raise Fail("editor restart failed")
+    mcp.init()
+
+
 def delete_assets(paths, timeout=120):
     """Delete assets so a following create cannot collide. Order dependents first.
 
     Right after editor launch the asset registry is still scanning: Asset.exists returns False for
     assets that are on disk, and the next create fails with "already exists". Disk is the truth here.
+
+    A deleted asset can stay loaded when an object nothing on disk references (the default object of
+    a deleted Blueprint, the undo history) still points at it: the file is gone, Asset.exists stays
+    True, a second delete returns False and create reports "already exists". No MCP tool runs garbage
+    collection, so the editor is restarted, which drops it.
     """
     for path in paths:
         end = time.time() + timeout
@@ -370,10 +383,28 @@ def delete_assets(paths, timeout=120):
             if time.time() > end:
                 raise Fail(f"{path} is on disk but the asset registry never listed it")
             time.sleep(2)
-        if must("Asset", "exists", {"path": path}) and not must("Asset", "delete", {"path": path}):
-            raise Fail(f"Asset.delete returned False for {path}")
-        if must("Asset", "exists", {"path": path}) or _on_disk(path):
-            raise Fail(f"{path} still exists after delete")
+        if must("Asset", "exists", {"path": path}):
+            must("Asset", "delete", {"path": path})
+        if _on_disk(path):
+            refs = mcp.call("Asset", "get_referencers", {"asset_path": path.split(".")[0]})[1]
+            raise Fail(f"{path} could not be deleted; referencers: {refs}")
+        if must("Asset", "exists", {"path": path}):
+            print(f"  {path} deleted on disk but still loaded; restarting the editor")
+            restart_editor()
+            if must("Asset", "exists", {"path": path}):
+                raise Fail(f"{path} still loaded after an editor restart")
+
+
+def fresh_wipe(level, placed, assets):
+    """--fresh: remove placed test actors, delete assets (dependents first), then restart the editor.
+    Rebuilding a Blueprint in the same session that deleted it, while other loaded objects still point
+    at the old class, crashed the editor (SIGSEGV in UStruct::SerializeExpr). A restart clears them."""
+    ensure_level(level)
+    for p in placed:
+        unplace(level, p)
+    save([level])
+    delete_assets(assets)
+    restart_editor()
 
 
 def xform(x=0, y=0, z=0, yaw=0):
