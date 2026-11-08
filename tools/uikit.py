@@ -176,6 +176,9 @@ class PIE:
         return self
 
     def __exit__(self, *a):
+        # Live Slate observers keep references to the game viewport; StopPIE then asserts
+        # GameViewport.IsUnique() and crashes the editor.
+        mcp.call("Slate", "Unobserve", {"ref": ""})
         if must("App", "IsPIERunning", {}):
             must("App", "StopPIE", {})
 
@@ -198,7 +201,10 @@ class PIE:
 
     def snapshot(self):
         must("Slate", "Observe", {"ref": "", "maxDepth": 60})
-        return str(must("Slate", "Snapshot", {"ref": "", "maxDepth": 60, "bIncludeSourceLocations": False}))
+        try:
+            return str(must("Slate", "Snapshot", {"ref": "", "maxDepth": 60, "bIncludeSourceLocations": False}))
+        finally:
+            mcp.call("Slate", "Unobserve", {"ref": ""})
 
     def button_ref(self, label):
         """Last match wins: the editor toolbar comes first in the snapshot and shows its own

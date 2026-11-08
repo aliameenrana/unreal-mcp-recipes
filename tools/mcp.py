@@ -23,6 +23,7 @@ SHORT = {
     "Actor": "editor_toolset.toolsets.actor.ActorTools",
     "DataTable": "editor_toolset.toolsets.data_table.DataTableTools",
     "Prim": "editor_toolset.toolsets.primitive.PrimitiveTools",
+    "DataAsset": "editor_toolset.toolsets.data_asset.DataAssetTools",
 }
 _session = None
 _id = 0
