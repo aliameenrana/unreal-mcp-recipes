@@ -17,6 +17,7 @@ formats tested against a running editor.
 | [recipes/ui/RECIPE.md](recipes/ui/RECIPE.md) | UMG menus: theme, layout, styling, button handlers, tween animation, show/hide, verification in PIE. First target is a pause menu. |
 | [recipes/ui/PROBES.md](recipes/ui/PROBES.md) | The live-editor tests behind the UI recipe and their results. |
 | [recipes/ui/theme.example.json](recipes/ui/theme.example.json) | Example theme the styling sequence reads. |
+| [recipes/health/RECIPE.md](recipes/health/RECIPE.md) | Health and score components: damage, heal, damage over time, death. |
 | [docs/HANDOFF.md](docs/HANDOFF.md) | Project brief: goals, format of sequences and recipes, the recipe catalog, known engine behavior and working rules. |
 | [tools/](tools/) | `mcp.py` JSON-RPC client for the editor's MCP server; `uikit.py` UMG builder and PIE test driver. |
 | [.mcp.json](.mcp.json) | Points an MCP client (Claude Code and others) at the editor's server on `localhost:8000/mcp`. |
@@ -51,7 +52,8 @@ formats tested against a running editor.
 | Recipe | State |
 | --- | --- |
 | UI (UMG) | Done. Pause, main menu, game over and HUD build from scripts and pass PIE checks. |
-| Enemy AI, inventory, weapons, magic, health, vehicles, level generation | Planned; see the catalog in `docs/HANDOFF.md`. |
+| Health and scoring | Done. Health and score components with damage, heal, DoT and death, verified in PIE. |
+| Enemy AI, inventory, weapons, magic, vehicles, level generation | Planned; see the catalog in `docs/HANDOFF.md`. |
 
 Tested on UE 5.8, macOS. Epic's MCP plugin is experimental, so tool names and
 formats may change between engine versions.

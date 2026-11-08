@@ -20,6 +20,9 @@ SHORT = {
     "App": "EditorToolset.EditorAppToolset",
     "Logs": "EditorToolset.LogsToolset",
     "Slate": "SlateInspectorToolset.SlateInspectorToolset",
+    "Actor": "editor_toolset.toolsets.actor.ActorTools",
+    "DataTable": "editor_toolset.toolsets.data_table.DataTableTools",
+    "Prim": "editor_toolset.toolsets.primitive.PrimitiveTools",
 }
 _session = None
 _id = 0
