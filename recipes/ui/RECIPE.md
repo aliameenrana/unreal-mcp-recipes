@@ -1,14 +1,50 @@
 # UI recipe (UMG)
 
-Builds themed, animated UMG menus in Unreal Engine 5.8 through Epic's Unreal
-MCP server (`ModelContextProtocol` plugin). The calls, formats and node IDs
-were run against a live 5.8 editor (evidence in [PROBES.md](PROBES.md)),
-except items marked *(listed, not run)*: those were found with
-`find_node_types` or in the tool schema but not executed yet. The pause
-menu below has not been built end to end yet.
+Builds themed, animated, resolution-independent UMG screens in Unreal Engine 5.8
+through Epic's Unreal MCP server (`ModelContextProtocol` plugin). Every call and
+format here ran against a live 5.8 editor (evidence in [PROBES.md](PROBES.md)).
+The four screens below are built and verified in Play-in-Editor by the scripts
+in [build/](build/).
 
-First target: a pause menu. The same sequences build an interaction prompt,
-main menu, game-over screen or HUD.
+## Run it
+
+Open the project in the editor (the MCP server starts with it), then:
+
+```bash
+python3 recipes/ui/build/menus.py --fresh   # pause, main menu, game over
+python3 recipes/ui/build/hud.py --fresh     # HUD
+```
+
+Each prints `<SCREEN> PASS` after a PIE run, or stops at the first failed
+check with the reason. `--verify-only` re-runs the PIE checks without rebuilding.
+To add a screen, copy a `MENUS` entry in `menus.py` (title, buttons, DSL body
+per button, open trigger, test keys) and run it by key: `menus.py <key> --fresh`.
+`tools/mcp.py` is the JSON-RPC client; `tools/uikit.py` holds the builder,
+the read-back checks and the PIE driver.
+
+| Screen | Asset | Opens | Verified in PIE |
+| --- | --- | --- | --- |
+| Pause | `WBP_Pause` | P (pauses game) | P opens, P closes through `DoResume`, reopens |
+| Main menu | `WBP_MainMenu` | BeginPlay | Enter runs Play: menu gone, game input back |
+| Game over | `WBP_GameOver` | G | Enter runs Retry: level reloads |
+| HUD | `WBP_HUD` | BeginPlay | Health 1.0 to 0.75, score 0 to 10, prompt shown |
+
+## Layout rules
+
+All sizes are 1080p reference units. The project pins the DPI curve in
+`DefaultEngine.ini` (`UIScaleRule=ShortestSide`, scale 1.0 at 1080), so a
+screen scales with the shortest side of any display.
+
+- Root is a `SafeZone`, then a `CanvasPanel`. Nothing sits outside the safe zone.
+- Modal menus: `Dim` Border anchored 0,0 to 1,1 (fills any aspect ratio), and a
+  `Card` Border anchored and aligned at 0.5,0.5 with `bAutoSize`. Inside the
+  card a `SizeBox` fixes the width (420 to 480); each button sits in a `SizeBox`
+  with `heightOverride` 56 and fills the width; labels are centered.
+- HUD: one card per corner. Anchor and alignment are equal, offsets push the
+  card inward by `spacing.outer`: top-left `(0,0)` at `(+32,+32)`, top-right
+  `(1,0)` at `(-32,+32)`, bottom-center `(0.5,1)` at `(0,-96)`.
+- Button fill uses theme color `raised`, never the card's `surface` color, or
+  the button disappears into the card.
 
 ## Requirements
 
@@ -248,23 +284,43 @@ Done when the boot actor compiles and exactly one instance is in the level.
 Done when the capture shows the widget and every expected marker is in the
 log.
 
-## Pause menu
+## Traps found while building
 
-1. `seq_ui_theme`.
-2. `seq_create_widget_layout` `WBP_Pause`: CanvasPanel `Root` > Border
-   `Dim` (full screen: anchors 0,0 to 1,1, offsets 0) > VerticalBox `Panel`
-   (centered) > TextBlock `Title`, Button `Resume` (TextBlock child),
-   Button `Quit` (TextBlock child).
-3. `seq_style_widget`: `Dim` = background at 0.6 alpha, `Title` = title
-   size, `Resume` = primary_button, `Quit` = danger_button.
-4. `seq_bind_button`: `Resume` runs the hide path, `Quit` runs `Game|QuitGame`.
-5. `seq_tween_widget`: `Panel` opacity 0 to 1 over 0.2 s, ease-out, started on
-   Construct.
-6. `seq_show_widget`: toggled by the Escape key, UI-only input, game paused.
-7. `seq_verify_widget`, clicking `Resume` and checking the menu closed.
+- **Key events cannot be DSL events.** `(event Input|KeyboardEvents|P ...)`
+  fails with "AddEvent|... does not exist". Poll on Tick instead:
+  `(if (Game|Player|WasInputKeyJustPressed :self pc :Key "P") ...)`.
+- **Key polling needs player input.** `SetInputModeUIOnly` starves it, so menus
+  open with `Input|SetInputModeGameAndUI`. Widgets tick while the game is
+  paused, so the menu polls its own close key. Ignore the first 0.1 s
+  (`(> TweenElapsed 0.1)`) or the press that opened the menu closes it.
+- **Function graphs:** `write_graph_dsl` with `(fn Name ...)` on the EventGraph
+  fails. Call `BP.add_function_graph {blueprint, graph_name}` first, then
+  write to `<BP>:<Name>`. Call it from the same Blueprint with `(CallFunction|Name)`.
+  The read-back prints it with a wrong title (`Media|MediaPlayer|Close`); the
+  runtime marker proves the right function runs.
+- **Cross-Blueprint variables:** after the widget compiles, its members are
+  `Class|WBPHUD|SetHealth :self ref :Health v` (class name without the
+  underscore). Hold the widget in `BP.add_object_variable {blueprint, name,
+  object_class: "<WBP>_C", graph: null, container_type: null}`. Recreating a
+  widget makes a new class: recreate the holder Blueprint too, or the setter
+  fails with "pins may be incompatible types".
+- **Impure getters:** `Game|GetCurrentLevelName` has exec pins; `bind` it before
+  use. Name pins take `(Utilities|String|StringToName s)`.
+- **Text:** `Widget|SetText(Text) :self <TextBlock> :InText`, with
+  `Utilities|Text|ToText(Integer)` for numbers. ProgressBar: `Progress|SetPercent`.
+- **Read-backs return object refs as `{"refPath": ...}`**; compare against that.
+- **`load_level` refuses a dirty level.** Check `Scene.get_current_level` first.
+- **Slate Click misses in-game widgets on Retina Macs.** Snapshot geometry for
+  PIE widgets is reported at 2x, so the synthesized click lands off the button,
+  in viewport and floating PIE alike, and `PressKey "Enter"` does not activate a
+  focused button. Verify buttons by graph read-back plus a keyboard path that
+  calls the same `Do<Button>` function. `PressKey` reaches the game only after
+  clicking the PIE viewport (the innermost large panel in the snapshot).
+- **Log markers persist across PIE sessions.** Count only entries that appear
+  after StartPIE (`uikit.PIE.markers` does this), or a stale marker passes.
 
 ## Out of scope
 
 CommonUI and gamepad focus, settings menus saved to Game User Settings,
-runtime theme switching, UMG Sequencer animations, MVVM bindings, custom
+runtime theme switching, mouse-click verification on Retina, UMG Sequencer animations, MVVM bindings, custom
 font import.

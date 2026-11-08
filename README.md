@@ -18,6 +18,7 @@ formats tested against a running editor.
 | [recipes/ui/PROBES.md](recipes/ui/PROBES.md) | The live-editor tests behind the UI recipe and their results. |
 | [recipes/ui/theme.example.json](recipes/ui/theme.example.json) | Example theme the styling sequence reads. |
 | [docs/HANDOFF.md](docs/HANDOFF.md) | Project brief: goals, format of sequences and recipes, the recipe catalog, known engine behavior and working rules. |
+| [tools/](tools/) | `mcp.py` JSON-RPC client for the editor's MCP server; `uikit.py` UMG builder and PIE test driver. |
 | [.mcp.json](.mcp.json) | Points an MCP client (Claude Code and others) at the editor's server on `localhost:8000/mcp`. |
 
 ## Terms
@@ -49,7 +50,7 @@ formats tested against a running editor.
 
 | Recipe | State |
 | --- | --- |
-| UI (UMG) | Tool routes tested live; pause menu not built end to end yet. Items not yet run are marked in the recipe. |
+| UI (UMG) | Done. Pause, main menu, game over and HUD build from scripts and pass PIE checks. |
 | Enemy AI, inventory, weapons, magic, health, vehicles, level generation | Planned; see the catalog in `docs/HANDOFF.md`. |
 
 Tested on UE 5.8, macOS. Epic's MCP plugin is experimental, so tool names and
