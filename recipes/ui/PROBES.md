@@ -115,7 +115,7 @@ double. Confirm a type with `get_node_type_pins` on its getter.
 **Level and PIE (P6, P7).** The editor opens `/Temp/Untitled_1`; call
 `SceneTools.load_level("/Game/MCPTest/L_OcclusionTest")` first. Place actors
 with `SceneTools.add_to_scene_from_class(actor_type, name, xform, parent, snap_to_ground)`,
-xform `{translation, rotation (quat), scale3D}`. `L_OcclusionTest` spawns a
+xform `{location, rotation {pitch, yaw, roll}, scale}` (other keys are ignored silently). `L_OcclusionTest` spawns a
 DefaultPawn, not the Third Person character. Verification:
 `StartPIE {"options": {"bSimulate": false, "playMode": "PlayMode_InViewPort", "warmupSeconds": 2}}`,
 then `CaptureEditorImage` (shows UMG; the PNG is base64 in

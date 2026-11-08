@@ -256,7 +256,7 @@ Input: widget Blueprint, trigger (BeginPlay or a key), input mode, pause flag.
    probed yet.
 3. Make sure the level is loaded: the editor opens on a temp level.
    `Scene.load_level {level_path}`, then
-   `Scene.add_to_scene_from_class {actor_type: {"refPath": ".../BP_UIBoot.BP_UIBoot_C"}, name, xform: {translation, rotation (quaternion), scale3D}, parent: null, snap_to_ground: false}`
+   `Scene.add_to_scene_from_class {actor_type: {"refPath": ".../BP_UIBoot.BP_UIBoot_C"}, name, xform: {location: {x,y,z}, rotation: {pitch,yaw,roll}, scale: {x,y,z}}, parent: null, snap_to_ground: false}`
    if no instance exists.
 
 Done when the boot actor compiles and exactly one instance is in the level.

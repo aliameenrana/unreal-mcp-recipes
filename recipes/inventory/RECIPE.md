@@ -28,23 +28,24 @@ and ends with `INVENTORY PASS`. Both actors are removed from the level after the
 
 | Key | Action | Expected print after `R` |
 | --- | --- | --- |
-| T | Add an inventory component to the pawn, teleport it onto the pickup (500, 0, 0) | `INV potion=0 coin=3` and `INV_PICKED` |
+| T | Add an inventory component to the pawn, teleport it onto the pickup (500, 0, 100) | `INV potion=0 coin=3` and `INV_PICKED` |
 | A | Add 10 potions | `INV potion=5 coin=3` (stack cap 5) |
 | X | Remove 1 coin | `INV potion=5 coin=2` |
 
 ## Traps found while building
 
-- On `--fresh`, `Asset.delete` reports success but leaves an asset that another
-  Blueprint or a placed actor still references, and the next `create` fails with
-  "already exists". Unplace actors first, then delete dependents before the assets they
-  use: test actor, pickup, component, data assets, item definition. Then check
-  `Asset.exists` again.
+- Right after the editor starts, the asset registry is still scanning and `Asset.exists`
+  returns False for assets that are on disk; a following `create` fails with "already exists".
+  `uikit.delete_assets` checks the `.uasset` file on disk, waits for the registry to list it,
+  deletes, and fails if the asset or file is still there. Deleting an asset that other
+  Blueprints reference works; order dependents first anyway so nothing is left dangling.
 - Data assets of a Blueprint class: `DataAsset.create` with `asset_type` set to the
   generated class (`..._C`). Compile the class before creating them.
-- `Actor.set_actor_transform` on a placed Blueprint actor returns success and leaves
-  it at the origin. Set `relativeLocation` on the actor's `RootComponent` with
-  `Object.set_properties` and read it back. On this level the Z value read back as 0,
-  so the test keeps the pickup and the teleport target at Z=0.
+- Transforms take `{location: {x,y,z}, rotation: {pitch,yaw,roll}, scale: {x,y,z}}`. Other keys
+  (`translation`, `scale3D`, quaternion rotation) are ignored without an error and the actor stays
+  at the origin. `uikit.place(level, bp, label, (x, y, z))` spawns or moves and reads the location back.
+- `Object.set_properties` with a struct value such as `relativeLocation {x,y,z}` writes only the
+  first field. Use `Actor.set_actor_transform` for positions.
 - `PrimitiveTools.add_sphere` rejects Blueprints. Add a `StaticMeshComponent` and set
   `staticMesh`, `relativeScale3D` and `bodyInstance.collisionProfileName` on it.
 - `set_variable_instance_editable` takes `variable_name`, not `name`.

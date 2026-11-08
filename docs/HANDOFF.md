@@ -383,3 +383,7 @@ first real test of the first sequence than to patch the old build.
    check passes at all four positions.
 5. Package it as the first skill. Do the next recipe only after this one
    works.
+
+Editor restart: `tools/restart_editor.sh` quits the editor, waits for port 8000 to be free,
+relaunches and waits for the MCP server. Relaunching while the old process holds the port logs
+"HttpListener unable to bind to 127.0.0.1:8000" and the server never starts.

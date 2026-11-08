@@ -6,7 +6,7 @@
 import os, sys, time
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../../tools"))
 import mcp
-from uikit import must, ref, save, place, unplace, ensure_level, Fail, PIE
+from uikit import must, ref, save, place, unplace, ensure_level, delete_assets, PIE
 
 F = "/Game/Inventory"
 D = f"{F}/BP_ItemDefinition.BP_ItemDefinition"
@@ -21,16 +21,11 @@ FRESH = "--fresh" in sys.argv
 
 
 def wipe():
-    # Delete dependents first; deleting an asset that is still referenced fails without an error.
     ensure_level(LEVEL)
     unplace(LEVEL, T)
     unplace(LEVEL, P)
     save([LEVEL])
-    for path in [T, P, I] + [f"{F}/Items/{n}.{n}" for n in ITEMS] + [D]:
-        if must("Asset", "exists", {"path": path}):
-            must("Asset", "delete", {"path": path})
-            if must("Asset", "exists", {"path": path}):
-                raise Fail(f"could not delete {path}")
+    delete_assets([T, P, I] + [f"{F}/Items/{n}.{n}" for n in ITEMS] + [D])
 
 
 def create(path, parent):
@@ -155,7 +150,7 @@ def build_pickup():
         (Development|PrintString "INV_PICKED")
         (Actor|DestroyActor :self self))"""
     must("BP", "write_graph_dsl", {"graph": P + ":EventGraph",
-         "code": "(event AddEvent|EventBeginPlay (Development|PrintString (Utilities|String|Append \"INV_AT \" (Utilities|String|ToString(Vector) (Transformation|GetActorLocation :self self)))))\n(event AddEvent|Collision|EventActorBeginOverlap (OtherActor) (Development|PrintString \"INV_OVERLAP\")" + with_inventory("OtherActor", body) + ")"})
+         "code": "(event AddEvent|Collision|EventActorBeginOverlap (OtherActor)" + with_inventory("OtherActor", body) + ")"})
     must("BP", "compile_blueprint", {"blueprint": ref(P)})
 
 
@@ -168,8 +163,7 @@ def build_test():
     count = lambda item: f"(Utilities|String|ToString(Integer) (Class|BPInventoryComponent|GetCount :self inv :Item {item}))"
     give = f"""
     (Game|AddComponentbyClass :self {pawn} :Class {INV_CLS})
-    (Transformation|SetActorLocation :self {pawn} :NewLocation (Math|Vector|MakeVector 500.0 0.0 0.0) :bSweep false :bTeleport true)
-    (Development|PrintString (Utilities|String|Append "INV_PAWN " (Utilities|GetDisplayName :Object {pawn})))"""
+    (Transformation|SetActorLocation :self {pawn} :NewLocation (Math|Vector|MakeVector 500.0 0.0 100.0) :bSweep false :bTeleport true)"""
     report = f""" (Development|PrintString (Utilities|String|Append "INV potion="
         (Utilities|String|Append {count(potion)} (Utilities|String|Append " coin=" {count(coin)}))))"""
     code = '(event AddEvent|EventBeginPlay (Development|PrintString "INV_READY"))\n(event AddEvent|EventTick (DeltaSeconds)'
@@ -183,15 +177,7 @@ def build_test():
 
 def place_pickup():
     import json
-    place(LEVEL, P, "Pickup_Coin")
-    actors = must("Scene", "find_actors", {"root": None, "name": "", "actor_type": ref(P + "_C"), "tag": "",
-                                           "bounds": None, "collision_channels": []})
-    a = actors[0] if isinstance(actors[0], dict) else ref(actors[0])
-    # Actor.set_actor_transform returns success but leaves the actor at the origin; move the root component instead.
-    # Z writes on this placed actor read back as 0, so the test keeps everything at Z=0.
-    root = json.loads(must("Object", "get_properties", {"instance": a, "properties": ["RootComponent"]}))["RootComponent"]
-    must("Object", "set_properties", {"instance": root, "values": json.dumps({"relativeLocation": {"x": 500, "y": 0, "z": 0}})})
-    assert '"x":500' in must("Object", "get_properties", {"instance": root, "properties": ["relativeLocation"]}).replace(".0", "")
+    a = place(LEVEL, P, "Pickup_Coin", (500, 0, 100))
     must("Object", "set_properties", {"instance": a, "values": json.dumps({"Item": f"{F}/Items/DA_Coin.DA_Coin", "Count": 3})})
     got = must("Object", "get_properties", {"instance": a, "properties": ["Item", "Count"]})
     assert "DA_Coin" in got and '"Count":3' in got, got
@@ -214,7 +200,7 @@ def verify():
                 return "potion=" + got.rsplit("INV potion=", 1)[1].split('"')[0]
 
             s = state("T", True)
-            assert "INV_PICKED" in p.markers("INV_PICKED"), f"pickup overlap did not fire ({s}) overlap={p.markers('INV_OVERLAP').count('INV_OVERLAP')} {p.markers('INV_PAWN')[-80:]} {p.markers('INV_AT')[-120:]}"
+            assert "INV_PICKED" in p.markers("INV_PICKED"), f"pickup overlap did not fire ({s})"
             assert s == "potion=0 coin=3", f"after pickup: {s}"
             print("  pickup:", s)
             s = state("A")

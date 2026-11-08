@@ -350,16 +350,54 @@ def ensure_level(level):
         must("Scene", "load_level", {"level_path": level})
 
 
-def place(level, bp_path, label):
+CONTENT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "UnrealProject", "Content")
+
+
+def _on_disk(path):
+    rel = path.split(".")[0].replace("/Game/", "", 1)
+    return os.path.exists(os.path.join(CONTENT, rel + ".uasset"))
+
+
+def delete_assets(paths, timeout=120):
+    """Delete assets so a following create cannot collide. Order dependents first.
+
+    Right after editor launch the asset registry is still scanning: Asset.exists returns False for
+    assets that are on disk, and the next create fails with "already exists". Disk is the truth here.
+    """
+    for path in paths:
+        end = time.time() + timeout
+        while _on_disk(path) and not must("Asset", "exists", {"path": path}):
+            if time.time() > end:
+                raise Fail(f"{path} is on disk but the asset registry never listed it")
+            time.sleep(2)
+        if must("Asset", "exists", {"path": path}) and not must("Asset", "delete", {"path": path}):
+            raise Fail(f"Asset.delete returned False for {path}")
+        if must("Asset", "exists", {"path": path}) or _on_disk(path):
+            raise Fail(f"{path} still exists after delete")
+
+
+def xform(x=0, y=0, z=0, yaw=0):
+    # Keys other than location/rotation/scale (e.g. translation, scale3D) are ignored without an error.
+    return {"location": {"x": x, "y": y, "z": z}, "rotation": {"pitch": 0, "yaw": yaw, "roll": 0},
+            "scale": {"x": 1, "y": 1, "z": 1}}
+
+
+def place(level, bp_path, label, loc=(0, 0, 0)):
+    """Ensure one instance of bp_path is in the level at loc; returns its ref."""
     ensure_level(level)
     cls = ref(bp_path + "_C")
     found = must("Scene", "find_actors", {"root": None, "name": "", "actor_type": cls, "tag": "",
                                           "bounds": None, "collision_channels": []})
-    if not found:
-        must("Scene", "add_to_scene_from_class", {"actor_type": cls, "name": label,
-             "xform": {"translation": {"x": 0, "y": 0, "z": 0}, "rotation": {"x": 0, "y": 0, "z": 0, "w": 1},
-                       "scale3D": {"x": 1, "y": 1, "z": 1}}, "parent": None, "snap_to_ground": False})
-    return found
+    if found:
+        actor = found[0] if isinstance(found[0], dict) else ref(found[0])
+        must("Actor", "set_actor_transform", {"actor": actor, "worldspace": True, "xform": xform(*loc)})
+    else:
+        actor = must("Scene", "add_to_scene_from_class", {"actor_type": cls, "name": label, "xform": xform(*loc),
+                                                          "parent": None, "snap_to_ground": False})
+    got = must("Actor", "get_actor_transform", {"actor": actor})["location"]
+    if any(abs(got[k] - v) > 0.01 for k, v in zip("xyz", loc)):
+        raise Fail(f"{label} at {got}, wanted {loc}")
+    return actor
 
 
 def unplace(level, bp_path):
