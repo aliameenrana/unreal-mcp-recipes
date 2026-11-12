@@ -181,6 +181,12 @@ class PIE:
         mcp.call("Slate", "Unobserve", {"ref": ""})
         if must("App", "IsPIERunning", {}):
             must("App", "StopPIE", {})
+        # StopPIE only requests the stop; tools called before it lands fail with "Editor is in play mode".
+        for _ in range(40):
+            if not must("App", "IsPIERunning", {}):
+                return
+            time.sleep(0.5)
+        raise Fail("PIE still running 20 s after StopPIE")
 
     def focus_game(self):
         """PressKey goes to the focused Slate widget; click the innermost large panel (the PIE viewport) first."""
