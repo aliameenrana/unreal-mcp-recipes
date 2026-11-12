@@ -13,6 +13,11 @@ It builds both components and a test actor, places the actor in
 `/Game/MCPTest/L_OcclusionTest`, drives it with keys in PIE, prints each state
 and ends with `HEALTH PASS`. The test actor is removed from the level afterwards.
 
+`--fresh` deletes the two components and the test actor, then restarts the editor
+before rebuilding (rebuilding a deleted Blueprint in the same session crashed the
+editor). Inventory, magic and weapons reference these components; rebuild them with
+`--fresh` after a fresh health build.
+
 ## What gets built
 
 `/Game/Gameplay/BP_HealthComponent` (parent `ActorComponent`)

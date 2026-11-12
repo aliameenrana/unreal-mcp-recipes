@@ -6,7 +6,7 @@
 import os, sys, time
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../../tools"))
 import mcp
-from uikit import must, ref, save, place, unplace, PIE, Fail
+from uikit import must, ref, save, place, unplace, fresh_wipe, PIE, Fail
 
 F = "/Game/Gameplay"
 H = f"{F}/BP_HealthComponent.BP_HealthComponent"
@@ -29,10 +29,6 @@ def fn(bp, name, params, code):
 
 
 def create(path, parent):
-    if "--fresh" in sys.argv and must("Asset", "exists", {"path": path}):
-        if parent.endswith(".Actor"):
-            unplace(LEVEL, path)
-        must("Asset", "delete", {"path": path})
     folder, name = path.rsplit("/", 1)[0], path.rsplit(".", 1)[1]
     must("BP", "create", {"folder_path": folder, "asset_name": name, "asset_type": ref(parent)})
 
@@ -91,6 +87,9 @@ def build_score():
 
 if __name__ == "__main__":
     mcp.init()
+    if "--fresh" in sys.argv:
+        # Magic, weapons and inventory reference these classes; rebuild them with --fresh afterwards.
+        fresh_wipe(LEVEL, [T], [T, S, H])
     if "--verify-only" not in sys.argv:
         build_health()
         build_score()

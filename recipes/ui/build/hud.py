@@ -17,8 +17,6 @@ PATH = f"{F}/{NAME}.{NAME}"
 
 
 def build(th):
-    if "--fresh" in sys.argv and must("Asset", "exists", {"path": PATH}):
-        must("Asset", "delete", {"path": PATH})
     bp = WidgetBP(F, NAME)
     bp.create()
     bp.add("SafeZone", "Safe")
@@ -79,6 +77,10 @@ def build(th):
 
 if __name__ == "__main__":
     mcp.init()
+    if "--fresh" in sys.argv:
+        # The boot actor goes too: its Hud variable is typed to the old WBP_HUD class.
+        boot = f"{F}/{BOOT}.{BOOT}"
+        fresh_wipe(LEVEL, [boot], [boot, PATH])
     if "--verify-only" not in sys.argv:
         build(Theme())
 
@@ -102,10 +104,6 @@ BOOT_CODE = f"""
 
 def build_boot():
     path = f"{F}/{BOOT}.{BOOT}"
-    # A recreated WBP_HUD is a new class; the old Hud variable would keep the stale type.
-    if "--fresh" in sys.argv and must("Asset", "exists", {"path": path}):
-        unplace(LEVEL, path)
-        must("Asset", "delete", {"path": path})
     if not must("Asset", "exists", {"path": path}):
         must("BP", "create", {"folder_path": F, "asset_name": BOOT, "asset_type": ref("/Script/Engine.Actor")})
         must("BP", "add_object_variable", {"blueprint": ref(path), "name": "Hud",

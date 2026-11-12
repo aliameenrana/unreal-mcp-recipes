@@ -157,6 +157,7 @@ def verify():
         with PIE() as p:
             time.sleep(2)
             assert "WPN_READY" in p.markers("WPN_READY"), "test actor did not start"
+            p.press_expect("R", "WPN ammo=")  # the first key after StartPIE can be dropped
 
             def last(tag):
                 got = p.markers(tag)

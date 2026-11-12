@@ -65,8 +65,6 @@ MENUS = {
 def build(key):
     m = MENUS[key]
     path = f"{F}/{m['spec']['name']}.{m['spec']['name']}"
-    if "--fresh" in sys.argv and must("Asset", "exists", {"path": path}):
-        must("Asset", "delete", {"path": path})
     build_menu(Theme(), F, m["spec"])
     boot = boot_actor(F, m["boot"], m["boot_code"](), LEVEL)
     save([path.split(".")[0], boot.split(".")[0]])
@@ -84,7 +82,7 @@ def verify(key):
         with PIE() as p:
             time.sleep(2)
             if m["open_key"]:
-                p.key(m["open_key"])
+                p.press_expect(m["open_key"], m["opened"])  # the first key after StartPIE can be dropped
             time.sleep(1)
             assert m["opened"] in p.markers(m["opened"]), f"{key}: menu did not open"
             assert p.button_ref(last_label), f"{key}: menu not on screen"
@@ -106,6 +104,10 @@ def verify(key):
 if __name__ == "__main__":
     mcp.init()
     keys = [a for a in sys.argv[1:] if not a.startswith("--")] or list(MENUS)
+    if "--fresh" in sys.argv:
+        boots = [f"{F}/{MENUS[k]['boot']}.{MENUS[k]['boot']}" for k in keys]
+        widgets = [f"{F}/{n}.{n}" for n in (MENUS[k]["spec"]["name"] for k in keys)]
+        fresh_wipe(LEVEL, boots, boots + widgets)
     for k in keys:
         if "--verify-only" not in sys.argv:
             build(k)

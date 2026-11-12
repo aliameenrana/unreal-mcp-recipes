@@ -17,6 +17,8 @@ python3 recipes/ui/build/hud.py --fresh     # HUD
 
 Each prints `<SCREEN> PASS` after a PIE run, or stops at the first failed
 check with the reason. `--verify-only` re-runs the PIE checks without rebuilding.
+`--fresh` deletes the widgets and their boot actors, then restarts the editor before
+rebuilding, because rebuilding a deleted Blueprint in the same session crashed the editor.
 To add a screen, copy a `MENUS` entry in `menus.py` (title, buttons, DSL body
 per button, open trigger, test keys) and run it by key: `menus.py <key> --fresh`.
 `tools/mcp.py` is the JSON-RPC client; `tools/uikit.py` holds the builder,
